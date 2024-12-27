@@ -1,10 +1,13 @@
 package main
 
 import (
-	"bytes"
-	"fmt"
+	"image/color"
+	"os"
 
-	"github.com/dslipak/pdf"
+	"gioui.org/app"
+	"gioui.org/op"
+	"gioui.org/text"
+	"gioui.org/widget/material"
 )
 
 func check(e error) {
@@ -14,20 +17,44 @@ func check(e error) {
 }
 
 func main() {
-	content, err := readPdf("/book.pdf")
-	check(err)
-	fmt.Print(content)
+	go func() {
+		window := new(app.Window)
+		err := run(window, "Hello There")
+		check(err)
+		os.Exit(0)
+	}()
+	app.Main()
 }
 
-func readPdf(path string) (string, error) {
-	f, err := pdf.Open(path)
-	// remember close file
-	r := f.Trailer().Reader()
-	defer r.Close()
-	check(err)
-	var buf bytes.Buffer
-	b, err := f.GetPlainText()
-	check(err)
-	buf.ReadFrom(b)
-	return buf.String(), nil
+func run(window *app.Window, content string) error {
+	theme := material.NewTheme()
+	var ops op.Ops
+	for {
+		switch e := window.Event().(type) {
+		case app.DestroyEvent:
+			return e.Err
+		case app.FrameEvent:
+			// This graphics context is used for managing the rendering state.
+			gtx := app.NewContext(&ops, e)
+
+			// Define an large label with an appropriate text:
+			title := material.H1(theme, content)
+
+			// Change the color of the label.
+			maroon := color.NRGBA{R: 127, G: 0, B: 0, A: 255}
+			title.Color = maroon
+
+			// Change the position of the label.
+			title.Alignment = text.Start
+
+			// Draw the label to the graphics context.
+			title.Layout(gtx)
+
+			// Pass the drawing operations to the GPU.
+			e.Frame(gtx.Ops)
+		}
+	}
+}
+
+func getPdfPage(path string, pageNum int) {
 }
